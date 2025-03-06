@@ -4,15 +4,12 @@ Items.lastInteractable = nil
 Items.cancelNextUI = false
 Items.cancelNextSafeUI = false
 Items.cancelNextStatueUI = false
-Items.skipUiList = {}
-Items.skipUiList["st05_0110_sm41_427_ES_VaccineFreezer01A_gimmick"] = true
 
 function Items.Init()
     if not Items.isInit then
         Items.isInit = true
 
         Items.SetupInteractHook()
-        Items.SetupDisconnectWaitHook()
         Items.SetupSafeUIHook()
         Items.SetupStatueUIHook()
     end
@@ -27,7 +24,7 @@ function Items.SetupInteractHook()
         Archipelago.waitingForInvincibilityOff = true
         feedbackFSM = sdk.to_managed_object(args[2])
         feedbackParent = sdk.to_managed_object(feedbackFSM:get_field('_Owner'))
-        
+
         item_name = feedbackParent:call("get_Name()")
         item_folder = feedbackParent:call("get_Folder()")
         item_folder_path = nil
@@ -49,7 +46,7 @@ function Items.SetupInteractHook()
                 if not item_name or not item_folder_path or not item_positions then
                     item_parent_name = "" -- unset so we know it's a non-standard item location
                 end
-            else 
+            else
                 -- non-item things like typewriters here, so do typewriter interaction tracking
                 if string.match(item_name, "Typewriter") then
                     if not Typewriters.unlocked_typewriters[item_name] then
@@ -68,19 +65,9 @@ function Items.SetupInteractHook()
 
             if Archipelago.hasConnectedPrior then
                 GUI.AddText("Archipelago is not connected.")
-                Items.cancelNextUI = true
             end
 
             return
-        end
-		
-        -- force exit item pick up ui on some interactions
-        if Items.skipUiList[item_name] ~= nil then
-            local uiMaster = scene:call("findGameObject(System.String)", "UIMaster")
-            local compGuiMaster = uiMaster:call("getComponent(System.Type)", sdk.typeof(sdk.game_namespace("gui.GUIMaster")))
-
-            Items.cancelNextUI = false
-            compGuiMaster:closeInventory()
         end
 
         -- if item_name and item_folder_path are not nil (even empty strings), do a location lookup to see if we should get an item
@@ -124,14 +111,14 @@ function Items.SetupInteractHook()
     		print("Setting talkedToTyrell to true")
     		Storage.talkedToTyrell = true
 	    end
-        
+
             local isLocationRandomized = Archipelago.IsLocationRandomized(location_to_check)
 
-            if Archipelago.IsItemLocation(location_to_check) and (Archipelago.SendLocationCheck(location_to_check) and not CutsceneObjects[item_name] or Archipelago.IsConnected()) then    
-                if item_positions and isLocationRandomized then                   
+            if Archipelago.IsItemLocation(location_to_check) and (Archipelago.SendLocationCheck(location_to_check) and not CutsceneObjects[item_name] or Archipelago.IsConnected()) then
+                if item_positions and isLocationRandomized then
                     item_positions:call('vanishItemAndSave()')
                 end
-                
+
                 if string.find(item_name, "SafeBoxDial") then -- if it's a safe, cancel the next safe ui
                     Items.cancelNextSafeUI = true
                     Items.lastInteractable = feedbackParent
@@ -143,22 +130,6 @@ function Items.SetupInteractHook()
                 -- local inputSystem = sdk.get_managed_singleton(sdk.game_namespace("InputSystem"))
                 -- inputSystem:MouseCancelPC() -- this is so hacky, lol
             end
-        end
-    end)
-end
-
-function Items.SetupDisconnectWaitHook()
-    local guiNewInventoryTypeDef = sdk.find_type_definition(sdk.game_namespace("gui.EsInventoryBehavior"))
-    local guiNewInventoryMethod = guiNewInventoryTypeDef:get_method("setCaptionState")
-
-    -- small hook that handles cancelling inventory UIs when having connected before and being not reconnected
-    sdk.hook(guiNewInventoryMethod, function (args)
-        if Items.cancelNextUI then
-            local uiMaster = Scene.getSceneObject():findGameObject("UIMaster")
-            local compGuiMaster = uiMaster:call("getComponent(System.Type)", sdk.typeof(sdk.game_namespace("gui.GUIMaster")))
-
-            Items.cancelNextUI = false
-            compGuiMaster:closeInventoryForce()
         end
     end)
 end
@@ -210,43 +181,6 @@ function Items.SetupSafeUIHook()
             compInteractBehavior:get_field("MyInteract"):call("clear()") -- makes the safe no longer interactable via "use key"
         end
     end)
-end
-
--- this was a test to swap items to a different visual item. might not work anymore.
-function Items.SwapAllItemsTo(item_name)
-    scene = sdk.call_native_func(sdk.get_native_singleton("via.SceneManager"), sdk.find_type_definition("via.SceneManager"), "get_CurrentScene()")
-    item_objects = scene:call("findGameObjectsWithTag(System.String)", "Item")
-
-    for k, item in pairs(item_objects:get_elements()) do
-        item_name = item:call("get_Name()")
-        item_folder = item:call("get_Folder()")
-        item_folder_path = item_folder:call("get_Path()")
-        item_component = item:call("getComponent(System.Type)", sdk.typeof(sdk.game_namespace("item.ItemPositions")))
-
-        if item_component then
-            item_id = item_component:get_field("InitializeItemId")
-
-            if item_id then -- all item_numbers are hex to decimal, use decimal here
-                if new_item_name == "spray" then
-                    item_number = 1
-                    item_count = 1
-                elseif new_item_name == "handgun ammo" then
-                    item_number = 15
-                    item_count = 30
-                elseif new_item_name == "wood crate" then
-                    item_number = 294
-                    item_count = 1
-                elseif new_item_name == "picture block" then
-                    item_number = 98
-                    item_count = 1
-                end
-
-                item_component:set_field("InitializeItemId", item_number)
-                item_component:set_field("InitializeCount", item_count)
-                item_component:call("createInitializeItem()")
-            end
-        end
-    end
 end
 
 return Items

@@ -53,4 +53,43 @@ function CutsceneObjects.CultureSample()
     cultureComponent:set_field("Enable", false)
 end
 
+function CutsceneObjects.TestTube()
+    -- Retrieve the inventory settings component
+    local inventorySettings = Helpers.component(Helpers.gameObject("st05_0110_sm41_427_ES_VaccineFreezer01A_gimmick"), "gimmick.option.AddItemsToInventorySettings")
+
+    -- Check if the inventory settings were successfully retrieved
+    if not inventorySettings then
+        print("Failed to retrieve inventory settings")
+        return
+    end
+
+    -- Retrieve the SettingList from the inventory settings
+    local settingList = inventorySettings:get_field("SettingList")
+
+    -- Check if SettingList is valid and not empty
+    if not settingList or #settingList == 0 then
+        print("SettingList is empty or missing")
+        return
+    end
+
+    -- Access the first element in the SettingList (index 1 in Lua)
+    local firstSetting = settingList[1]
+
+    -- Check if the firstSetting is valid and has the PopEnable field
+    if not firstSetting then
+        print("First setting is missing")
+        return
+    end
+
+    -- Set the PopEnable field to false
+    local success = firstSetting:set_field("PopEnable", false)
+
+    -- Check if the field was successfully set
+    if success then
+        print("PopEnable set to false for first inventory setting")
+    else
+        print("Failed to set PopEnable for first inventory setting")
+    end
+end
+
 return CutsceneObjects

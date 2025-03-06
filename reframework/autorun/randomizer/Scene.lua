@@ -8,7 +8,7 @@ function Scene.getSceneObject()
         return Scene.sceneObject
     end
 
-    Scene.sceneObject = sdk.call_native_func(sdk.get_native_singleton("via.SceneManager"), sdk.find_type_definition("via.SceneManager"), "get_CurrentScene")
+    Scene.sceneObject = sdk.call_native_func(sdk.get_native_singleton("via.SceneManager"), sdk.find_type_definition("via.SceneManager"), "get_CurrentScene()")
 
     return Scene.sceneObject
 end
@@ -39,6 +39,22 @@ function Scene.getMainFlowManager()
     Scene.mainFlowManager = gameMaster:call("getComponent(System.Type)", sdk.typeof(sdk.game_namespace("gamemastering.MainFlowManager")))
 
     return Scene.mainFlowManager
+end
+
+function Scene.getUIMaster()
+    -- local gameMaster = Scene.getSceneObject():findGameObject("30_GameMaster")
+    local masters = Scene.getSceneObject():findGameObjectsWithTag("Masters")
+    local uiMaster = nil
+
+    for k, master in pairs(masters) do
+        if master:get_Name() == "UIMaster" then
+            uiMaster = master
+
+            break
+        end
+    end
+
+    return uiMaster
 end
 
 function Scene.getSurvivorType()
